@@ -29,7 +29,7 @@ The dataset contains numerous fields including but not limited to:
 ## Prerequisites
 
 - Apache Hadoop 3.4.1+
-- Apache Pig 0.17.0+
+- Apache Pig 0.17.0+ (https://pig.apache.org/releases.html)
 - Java 8+
 - HDFS running on localhost:9000
 
@@ -76,6 +76,8 @@ The dataset contains numerous fields including but not limited to:
 - **Job History**: http://localhost:19888/jobhistory
 
 ## Pig Setup and Usage
+
+**Download pig from : https://pig.apache.org/releases.html**
 
 1. **Start Pig in MapReduce mode**:
    ```bash
