@@ -19,12 +19,12 @@ hadoop fs -mkdir -p /crime_data_analysis/processed
 hadoop fs -mkdir -p /crime_data_analysis/analyzed
 
 # Copy the data file to HDFS if not already there
-echo "Copying data to HDFS if needed..."
-hadoop fs -test -e /crime_data_analysis/raw/crime_data.csv
-if [ $? -ne 0 ]; then
-    echo "Data file not found in HDFS, copying from local..."
-    hadoop fs -copyFromLocal /Users/ingale.r/Downloads/Crime_Data_from_2020_to_Present.csv /crime_data_analysis/raw/crime_data.csv
-fi
+# echo "Copying data to HDFS if needed..."
+# hadoop fs -test -e /crime_data_analysis/raw/crime_data.csv
+# if [ $? -ne 0 ]; then
+#     echo "Data file not found in HDFS, copying from local..."
+#     hadoop fs -copyFromLocal /Users/ingale.r/Downloads/Crime_Data_from_2020_to_Present.csv /crime_data_analysis/raw/crime_data.csv
+# fi
 
 # Run the load job
 echo "Running data load job..."
