@@ -5,15 +5,18 @@
 # Permission to make it executable as shell script:
 # chmod +x run_pig_jobs.sh
 
+# Delete data from HDFS: 
+hadoop fs -rm -r -f /crime_data_analysis
+
 # Set permission to write to logs
 LOG_DIR="$(pwd)/logs"
 mkdir -p $LOG_DIR
 
 # Create HDFS directories if they don't exist
-# hadoop fs -mkdir -p /crime_data_analysis/raw
-# hadoop fs -mkdir -p /crime_data_analysis/output
-# hadoop fs -mkdir -p /crime_data_analysis/processed
-# hadoop fs -mkdir -p /crime_data_analysis/analyzed
+hadoop fs -mkdir -p /crime_data_analysis/raw
+hadoop fs -mkdir -p /crime_data_analysis/output
+hadoop fs -mkdir -p /crime_data_analysis/processed
+hadoop fs -mkdir -p /crime_data_analysis/analyzed
 
 # Copy the data file to HDFS if not already there
 # echo "Copying data to HDFS if needed..."
@@ -32,12 +35,12 @@ if [ $? -ne 0 ]; then
 fi
 
 # Run the cleanup job
-# echo "Running data cleanup job..."
-# pig -x mapreduce -f pig-scripts/utils/cleanup.pig > $LOG_DIR/cleanup_$(date +%Y%m%d_%H%M%S).log 2>&1
-# if [ $? -ne 0 ]; then
-#     echo "ERROR: Data cleanup job failed!"
-#     exit 1
-# fi
+echo "Running data cleanup job..."
+pig -x mapreduce -f $(pwd)/pig-scripts/utils/cleanup.pig > $LOG_DIR/cleanup_$(date +%Y%m%d_%H%M%S).log 2>&1
+if [ $? -ne 0 ]; then
+    echo "ERROR: Data cleanup job failed!"
+    exit 1
+fi
 
 # Run the transform job
 # echo "Running data transform job..."
