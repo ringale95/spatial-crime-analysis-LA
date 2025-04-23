@@ -1,97 +1,109 @@
--- Cleanup the data
-raw_crimes = LOAD '/crime_data_analysis/output/filtered_crimes' USING PigStorage(',') 
-            AS (DR_NO:long, 
-                Date_Rptd:chararray, 
-                DATE_OCC:chararray, 
-                TIME_OCC:int, 
-                AREA:int, 
-                AREA_NAME:chararray, 
-                Rpt_Dist_No:int, 
-                Part_1_2:int,
-                Crm_Cd:int, 
-                Crm_Cd_Desc:chararray, 
-                Mocodes:chararray, 
-                Vict_Age:int, 
-                Vict_Sex:chararray, 
-                Vict_Descent:chararray, 
-                Premis_Cd:int, 
-                Premis_Desc:chararray, 
-                Weapon_Used_Cd:int, 
-                Weapon_Desc:chararray,
-                Status:chararray, 
-                Status_Desc:chararray, 
-                Crm_Cd_1:int, 
-                Crm_Cd_2:int,
-                Crm_Cd_3:int, 
-                Crm_Cd_4:int, 
-                LOCATION:chararray, 
-                Cross_Street:chararray,
-                LAT:double, 
-                LON:double);
+-- Load raw data
+raw_crimes = LOAD '/crime_data_analysis/raw/crime_data.csv' 
+USING PigStorage(',') 
+AS (DR_NO:chararray,
+    Date_Rptd:chararray,
+    DATE_OCC:chararray,
+    TIME_OCC:chararray,
+    AREA:chararray,
+    AREA_NAME:chararray,
+    Rpt_Dist_No:chararray,
+    Part_1_2:chararray,
+    Crm_Cd:chararray,
+    Crm_Cd_Desc:chararray,
+    Mocodes:chararray,
+    Vict_Age:chararray,
+    Vict_Sex:chararray,
+    Vict_Descent:chararray,
+    Premis_Cd:chararray,
+    Premis_Desc:chararray,
+    Weapon_Used_Cd:chararray,
+    Weapon_Desc:chararray,
+    Status:chararray,
+    Status_Desc:chararray,
+    Crm_Cd_1:chararray,
+    Crm_Cd_2:chararray,
+    Crm_Cd_3:chararray,
+    Crm_Cd_4:chararray,
+    LOCATION:chararray,
+    Cross_Street:chararray,
+    LAT:chararray,
+    LON:chararray);
 
--- Filter out records with header values or empty critical fields
-filtered_crimes = FILTER raw_crimes BY 
-                DR_NO IS NOT NULL AND 
-                DR_NO != 'DR_NO' AND
-                DATE_OCC IS NOT NULL;
+-- Remove header and null DR_NO - only filter the data rows
+filtered_crimes = FILTER raw_crimes BY DR_NO != 'DR_NO' AND DR_NO IS NOT NULL;
 
--- Clean and transform the data
+-- Clean date and time, drop unused columns
+-- Avoid using aliases for complex expressions
 cleaned_crimes = FOREACH filtered_crimes GENERATE
-    -- Rename fields
-    DR_NO AS division_record_number,
-    
-    -- Clean Date_Rptd (remove time component)
-    (INDEXOF(Date_Rptd, ' ') > 0 ? 
-        SUBSTRING(Date_Rptd, 0, INDEXOF(Date_Rptd, ' ')) : 
-        Date_Rptd) AS date_reported,
-    
-    -- Clean DATE_OCC (remove time component)
-    (INDEXOF(DATE_OCC, ' ') > 0 ? 
-        SUBSTRING(DATE_OCC, 0, INDEXOF(DATE_OCC, ' ')) : 
-        DATE_OCC) AS date_occurred,
-    
-    -- Keep TIME_OCC and rename
-    TIME_OCC AS time_of_occurrence,
-    
-    -- Keep AREA_NAME only (drop AREA code)
-    AREA_NAME AS area_name,
-    
-    -- Rename Rpt_Dist_No
-    Rpt_Dist_No AS reporting_district_number,
-    
-    -- Keep Part_1_2
-    Part_1_2 AS part_category,
-    
-    -- Keep Crm_Cd_Desc and rename
-    Crm_Cd_Desc AS crime_description,
-    
-    -- Keep Crm_Cd and rename
-    Crm_Cd AS crime_code,
-    
-    -- Keep other demographic fields
-    Mocodes AS modus_operandi_codes,
-    Vict_Age AS victim_age,
-    Vict_Sex AS victim_sex,
-    Vict_Descent AS victim_descent,
-    
-    -- Keep Premis_Desc only and rename
-    Premis_Desc AS premises_description,
-    
-    -- Keep Weapon_Desc only and rename
-    Weapon_Desc AS weapon_description,
-    
-    -- Keep Status_Desc only and rename
-    Status_Desc AS status_description,
-    
-    -- Keep location information
-    LOCATION AS location,
-    Cross_Street AS cross_street,
-    LAT AS latitude,
-    LON AS longitude;
+    DR_NO,
+    SUBSTRING(Date_Rptd, 0, 10),
+    SUBSTRING(DATE_OCC, 0, 10),
+    -- Convert military time to regular time with AM/PM
+    (SIZE(TIME_OCC) > 0 ? 
+        (((int)TIME_OCC >= 1200) ? 
+            -- PM times
+            ((int)TIME_OCC == 1200 ? 
+                '12:00 PM' : 
+                CONCAT(CONCAT((chararray)((int)TIME_OCC/100 - 12), ':'), 
+                    CONCAT(((int)TIME_OCC%100 < 10 ? 
+                        CONCAT('0', (chararray)((int)TIME_OCC%100)) : 
+                        (chararray)((int)TIME_OCC%100)), ' PM'))
+            ) : 
+            -- AM times
+            ((int)TIME_OCC == 0 ? 
+                '12:00 AM' : 
+                CONCAT(CONCAT((chararray)((int)TIME_OCC/100), ':'), 
+                    CONCAT(((int)TIME_OCC%100 < 10 ? 
+                        CONCAT('0', (chararray)((int)TIME_OCC%100)) : 
+                        (chararray)((int)TIME_OCC%100)), ' AM'))
+            )
+        ) : TIME_OCC
+    ),
+    AREA,
+    Rpt_Dist_No,
+    Part_1_2,
+    Crm_Cd,
+    Mocodes,
+    Vict_Age,
+    Vict_Sex,
+    Vict_Descent,
+    Premis_Cd,
+    Weapon_Used_Cd,
+    Status,
+    LOCATION,
+    Cross_Street,
+    LAT,
+    LON;
 
--- Create a sample of cleaned data for inspection
-cleaned_sample = LIMIT cleaned_crimes 10;
-DUMP cleaned_sample;
+-- Filter rows missing important values
+final_clean = FILTER cleaned_crimes BY Crm_Cd IS NOT NULL;
 
--- Store the cleaned data
-STORE cleaned_crimes INTO '/crime_data_analysis/output/cleaned_crimes' USING PigStorage(',');
+-- Store cleaned output without header
+STORE final_clean INTO '/crime_data_analysis/output/cleaned_crimes_data' USING PigStorage(',');
+
+-- ========== LOOKUP TABLES ==========
+-- Crime Code Lookup
+crime_code_pairs = FOREACH raw_crimes GENERATE Crm_Cd, Crm_Cd_Desc;
+crime_code_lookup = DISTINCT crime_code_pairs;
+STORE crime_code_lookup INTO '/crime_data_analysis/output/lookups/crime_code_lookup' USING PigStorage(',');
+
+-- Area Code Lookup
+area_pairs = FOREACH raw_crimes GENERATE AREA, AREA_NAME;
+area_lookup = DISTINCT area_pairs;
+STORE area_lookup INTO '/crime_data_analysis/output/lookups/area_code_lookup' USING PigStorage(',');
+
+-- Premise Code Lookup
+premise_pairs = FOREACH raw_crimes GENERATE Premis_Cd, Premis_Desc;
+premise_lookup = DISTINCT premise_pairs;
+STORE premise_lookup INTO '/crime_data_analysis/output/lookups/premise_code_lookup' USING PigStorage(',');
+
+-- Weapon Code Lookup
+weapon_pairs = FOREACH raw_crimes GENERATE Weapon_Used_Cd, Weapon_Desc;
+weapon_lookup = DISTINCT weapon_pairs;
+STORE weapon_lookup INTO '/crime_data_analysis/output/lookups/weapon_code_lookup' USING PigStorage(',');
+
+-- Status Code Lookup
+status_pairs = FOREACH raw_crimes GENERATE Status, Status_Desc;
+status_lookup = DISTINCT status_pairs;
+STORE status_lookup INTO '/crime_data_analysis/output/lookups/status_code_lookup' USING PigStorage(',');
