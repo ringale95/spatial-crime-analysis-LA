@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Create a header file with renamed columns
 echo "division_record_number,date_reported,date_of_occurence,time_of_occurrence,AREA,reporting_district_number,Part_1_2,crime_code,Mocodes,Vict_Age,Vict_Sex,Vict_Descent,Premis_Cd,Weapon_Used_Cd,Status,LOCATION,Cross_Street,Latitude,Longitude" > header.csv
 
