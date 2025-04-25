@@ -49,7 +49,7 @@ fi
 
 # Replace original lookups with cleaned versions
 echo "Replacing lookup files with cleaned versions..."
-./replace_lookups.sh > $LOG_DIR/replace_lookups_$(date +%Y%m%d_%H%M%S).log 2>&1
+./scripts/replace_lookups.sh > $LOG_DIR/replace_lookups_$(date +%Y%m%d_%H%M%S).log 2>&1
 if [ $? -ne 0 ]; then
     echo "ERROR: Replacing lookup files failed!"
     exit 1

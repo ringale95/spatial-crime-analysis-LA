@@ -25,3 +25,7 @@ logs/
 hs_err_pid*
 replay_pid*
 
+crime_hotspots.csv
+.DS_Store
+
+
