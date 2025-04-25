@@ -35,3 +35,28 @@ TBLPROPERTIES ('skip.header.line.count'='1');
 
 
 SELECT * FROM crimes_with_location LIMIT 10;
+
+
+CREATE TABLE IF NOT EXISTS crime_density_by_grid AS
+SELECT 
+  ROUND(lat, 2) AS lat_grid,
+  ROUND(lon, 2) AS lon_grid,
+  COUNT(*) AS crime_count
+FROM crimes_with_location
+WHERE lat IS NOT NULL AND lon IS NOT NULL
+GROUP BY ROUND(lat, 2), ROUND(lon, 2);
+
+
+--  top 10 crime hotspots
+CREATE OR REPLACE VIEW top_crime_hotspots AS
+SELECT 
+  lat_grid,
+  lon_grid,
+  crime_count
+FROM crime_density_by_grid
+ORDER BY crime_count DESC
+LIMIT 10;
+
+SELECT * FROM top_crime_hotspots;
+
+
